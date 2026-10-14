@@ -1,0 +1,140 @@
+@model IEnumerable<AcxiomCRM.Models.AuditLog>
+@{
+    ViewData["Title"] = "Security & Business Audit Logs";
+    var modules = ViewBag.Modules as IEnumerable<string> ?? new List<string>();
+    var actions = ViewBag.Actions as IEnumerable<string> ?? new List<string>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="fw-bold text-dark mb-1"><i class="bi bi-shield-check text-success me-2"></i>Security & Activity Audit Trail</h4>
+        <p class="text-muted small mb-0">Append-only immutable record of all logins, CRM mutations, role changes, and security events.</p>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="crm-card p-3 mb-4">
+    <form method="get" asp-action="Index" class="row g-2 align-items-center">
+        <div class="col-12 col-md-3">
+            <input type="text" name="user" value="@ViewBag.UserFilter" class="form-control" placeholder="Search by user email / ID..." />
+        </div>
+        <div class="col-6 col-md-2">
+            <select name="module" class="form-select">
+                <option value="">All Modules</option>
+                @foreach (var m in modules)
+                {
+                    <option value="@m" selected="@(ViewBag.ModuleFilter == m)">@m</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <select name="actionFilter" class="form-select">
+                <option value="">All Actions</option>
+                @foreach (var a in actions)
+                {
+                    <option value="@a" selected="@(ViewBag.ActionFilter == a)">@a</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <input type="date" name="fromDate" value="@ViewBag.FromDate" class="form-control" title="From Date" />
+        </div>
+        <div class="col-6 col-md-2">
+            <input type="date" name="toDate" value="@ViewBag.ToDate" class="form-control" title="To Date" />
+        </div>
+        <div class="col-12 col-md-1 d-flex gap-1">
+            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i></button>
+            <a asp-action="Index" class="btn btn-light border text-muted"><i class="bi bi-arrow-counterclockwise"></i></a>
+        </div>
+    </form>
+</div>
+
+<!-- Audit Table -->
+<div class="crm-card">
+    <div class="table-responsive">
+        <table class="table crm-table table-hover">
+            <thead>
+                <tr>
+                    <th>Timestamp (UTC)</th>
+                    <th>User</th>
+                    <th>Module</th>
+                    <th>Action</th>
+                    <th>Entity / Record ID</th>
+                    <th>Result</th>
+                    <th>Details & Notes</th>
+                    <th>IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="text-nowrap small text-muted font-monospace">@item.Timestamp.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td class="fw-semibold text-dark">
+                                @(item.UserName ?? item.UserId ?? "System")
+                            </td>
+                            <td><span class="badge bg-light text-primary border">@item.Module</span></td>
+                            <td>
+                                <span class="badge @(item.Action == "Login" ? "bg-info-subtle text-info" : item.Action == "Failed Login" ? "bg-danger text-white" : item.Action == "Create" ? "bg-success-subtle text-success" : item.Action == "Delete" ? "bg-danger-subtle text-danger" : item.Action == "Role Change" ? "bg-warning-subtle text-dark" : "bg-light text-dark border")">
+                                    @item.Action
+                                </span>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(item.EntityName))
+                                {
+                                    <span class="text-muted small">@item.EntityName #@item.RecordId</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge @(item.Result == "Success" ? "bg-success" : "bg-danger")">
+                                    @item.Result
+                                </span>
+                            </td>
+                            <td class="small text-muted" style="max-width: 300px;">
+                                @(item.Details ?? "-")
+                                @if (!string.IsNullOrEmpty(item.OldValue) || !string.IsNullOrEmpty(item.NewValue))
+                                {
+                                    <div class="font-monospace text-dark" style="font-size: 0.72rem;">
+                                        @if (!string.IsNullOrEmpty(item.OldValue)) { <div><strong>Old:</strong> @item.OldValue</div> }
+                                        @if (!string.IsNullOrEmpty(item.NewValue)) { <div><strong>New:</strong> @item.NewValue</div> }
+                                    </div>
+                                }
+                            </td>
+                            <td class="small font-monospace text-muted">@(item.IpAddress ?? "-")</td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="8" class="text-center py-5 text-muted">
+                            <i class="bi bi-shield-x fs-1 text-secondary"></i>
+                            <div class="mt-2">No audit log records match the search criteria.</div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (ViewBag.TotalPages > 1)
+    {
+        <div class="d-flex justify-content-between align-items-center p-3 border-top">
+            <span class="text-muted small">Showing @Model.Count() of @ViewBag.TotalCount audit events</span>
+            <ul class="pagination pagination-sm mb-0">
+                @for (int p = 1; p <= ViewBag.TotalPages; p++)
+                {
+                    <li class="page-item @(p == ViewBag.CurrentPage ? "active" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@p" asp-route-user="@ViewBag.UserFilter" asp-route-module="@ViewBag.ModuleFilter" asp-route-actionFilter="@ViewBag.ActionFilter">@p</a>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+</div>

@@ -1,0 +1,289 @@
+@model AcxiomCRM.ViewModels.ReportsIndexViewModel
+@{
+    ViewData["Title"] = "CRM Analytics & Reports";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h4 class="fw-bold text-dark mb-1"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Reports & Sales Intelligence</h4>
+        <p class="text-muted small mb-0">Exportable pipeline summaries, conversion analytics, team productivity, and audit records.</p>
+    </div>
+    <div class="dropdown">
+        <button class="btn btn-crm-primary dropdown-toggle btn-sm" type="button" data-bs-toggle="dropdown">
+            <i class="bi bi-download me-1"></i> Export to CSV
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+            <li><a class="dropdown-item" asp-action="ExportCsv" asp-route-type="customers"><i class="bi bi-people me-2"></i>Customer Master Report (.csv)</a></li>
+            <li><a class="dropdown-item" asp-action="ExportCsv" asp-route-type="leads"><i class="bi bi-funnel me-2"></i>Leads & Conversion Report (.csv)</a></li>
+            <li><a class="dropdown-item" asp-action="ExportCsv" asp-route-type="opportunities"><i class="bi bi-graph-up me-2"></i>Sales Opportunities Report (.csv)</a></li>
+        </ul>
+    </div>
+</div>
+
+<!-- Tabs Navigation -->
+<ul class="nav nav-tabs border-bottom mb-4">
+    <li class="nav-item">
+        <a class="nav-link @(Model.ActiveTab == "pipeline" ? "active fw-bold text-primary" : "text-muted")" asp-action="Index" asp-route-tab="pipeline">
+            <i class="bi bi-bar-chart me-1"></i> Pipeline Report
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.ActiveTab == "conversion" ? "active fw-bold text-primary" : "text-muted")" asp-action="Index" asp-route-tab="conversion">
+            <i class="bi bi-arrow-repeat me-1"></i> Sales & Conversion
+        </a>
+    </li>
+    @if (User.IsInRole("Admin") || User.IsInRole("Manager"))
+    {
+        <li class="nav-item">
+            <a class="nav-link @(Model.ActiveTab == "activity" ? "active fw-bold text-primary" : "text-muted")" asp-action="Index" asp-route-tab="activity">
+                <i class="bi bi-person-lines-fill me-1"></i> Team Productivity
+            </a>
+        </li>
+    }
+    <li class="nav-item">
+        <a class="nav-link @(Model.ActiveTab == "customers" ? "active fw-bold text-primary" : "text-muted")" asp-action="Index" asp-route-tab="customers">
+            <i class="bi bi-people me-1"></i> Customer List
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.ActiveTab == "leads" ? "active fw-bold text-primary" : "text-muted")" asp-action="Index" asp-route-tab="leads">
+            <i class="bi bi-funnel me-1"></i> Lead Source & Status
+        </a>
+    </li>
+</ul>
+
+@if (Model.ActiveTab == "pipeline")
+{
+    <!-- 1. Pipeline By Stage -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-lg-6">
+            <div class="crm-card h-100">
+                <div class="crm-card-header">
+                    <span class="fw-bold text-dark"><i class="bi bi-layers text-primary me-2"></i>Pipeline Stage Breakdown</span>
+                </div>
+                <div class="crm-card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table crm-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Stage</th>
+                                    <th>Deals</th>
+                                    <th>Total Value</th>
+                                    <th>Weighted Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.PipelineByStage)
+                                {
+                                    <tr>
+                                        <td><span class="badge bg-light text-dark border">@item.Stage</span></td>
+                                        <td class="fw-semibold">@item.Count</td>
+                                        <td class="fw-bold text-dark">$@item.TotalAmount.ToString("N0")</td>
+                                        <td class="text-success fw-bold">$@item.WeightedAmount.ToString("N0")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Pipeline By Owner -->
+        <div class="col-12 col-lg-6">
+            <div class="crm-card h-100">
+                <div class="crm-card-header">
+                    <span class="fw-bold text-dark"><i class="bi bi-person-badge text-info me-2"></i>Pipeline by Sales Owner</span>
+                </div>
+                <div class="crm-card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table crm-table mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Sales Executive</th>
+                                    <th>Deals</th>
+                                    <th>Total Value</th>
+                                    <th>Weighted Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.PipelineByOwner.Any())
+                                {
+                                    foreach (var owner in Model.PipelineByOwner)
+                                    {
+                                        <tr>
+                                            <td class="fw-semibold text-dark">@owner.OwnerName</td>
+                                            <td>@owner.OpportunityCount</td>
+                                            <td class="fw-bold text-dark">$@owner.TotalAmount.ToString("N0")</td>
+                                            <td class="text-success fw-bold">$@owner.WeightedAmount.ToString("N0")</td>
+                                        </tr>
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="4" class="text-center py-4 text-muted">No owner pipeline records.</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else if (Model.ActiveTab == "conversion")
+{
+    <!-- Sales / Conversion Report -->
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-md-4">
+            <div class="kpi-card">
+                <div class="kpi-icon-box bg-primary-subtle text-primary">
+                    <i class="bi bi-funnel-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Lead Conversion Rate</div>
+                    <div class="kpi-value text-primary">@Model.ConversionStats.LeadConversionRate%</div>
+                    <div class="text-muted small">@Model.ConversionStats.ConvertedLeads of @Model.ConversionStats.TotalLeads leads converted</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="kpi-card">
+                <div class="kpi-icon-box bg-success-subtle text-success">
+                    <i class="bi bi-trophy-fill"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Opportunity Win Rate</div>
+                    <div class="kpi-value text-success">@Model.ConversionStats.OpportunityWinRate%</div>
+                    <div class="text-muted small">@Model.ConversionStats.WonOpportunities won, @Model.ConversionStats.LostOpportunities lost</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="kpi-card">
+                <div class="kpi-icon-box bg-info-subtle text-info">
+                    <i class="bi bi-cash-coin"></i>
+                </div>
+                <div>
+                    <div class="kpi-title">Total Won Revenue</div>
+                    <div class="kpi-value text-dark">$@Model.ConversionStats.TotalWonRevenue.ToString("N0")</div>
+                    <div class="text-muted small">Closed-Won contract value</div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else if (Model.ActiveTab == "activity")
+{
+    <!-- User Activity Report -->
+    <div class="crm-card">
+        <div class="crm-card-header">
+            <span class="fw-bold text-dark"><i class="bi bi-people text-primary me-2"></i>Team Performance & Activity Count</span>
+        </div>
+        <div class="crm-card-body p-0">
+            <div class="table-responsive">
+                <table class="table crm-table mb-0">
+                    <thead>
+                        <tr>
+                            <th>User Name</th>
+                            <th>Role</th>
+                            <th>Logged Activities</th>
+                            <th>Follow-Ups Assigned</th>
+                            <th>Opportunities Owned</th>
+                            <th>Leads Assigned</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var u in Model.UserActivities)
+                        {
+                            <tr>
+                                <td class="fw-semibold text-dark">@u.UserName</td>
+                                <td><span class="badge bg-light text-dark border">@u.Role</span></td>
+                                <td class="fw-bold text-primary">@u.TotalActivities</td>
+                                <td>@u.FollowUpsHandled</td>
+                                <td>@u.OpportunitiesHandled</td>
+                                <td>@u.LeadsHandled</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+else if (Model.ActiveTab == "customers")
+{
+    <!-- Customer Report -->
+    <div class="crm-card">
+        <div class="table-responsive">
+            <table class="table crm-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Name</th>
+                        <th>Company</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                        <th>Created Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model.Customers)
+                    {
+                        <tr>
+                            <td><span class="badge bg-light text-primary border font-monospace">@c.CustomerCode</span></td>
+                            <td class="fw-semibold">@c.CustomerName</td>
+                            <td>@(c.CompanyName ?? "-")</td>
+                            <td>@c.Email</td>
+                            <td>@c.Phone</td>
+                            <td><span class="badge-status @(c.Status == "Active" ? "badge-active" : "badge-planned")">@c.Status</span></td>
+                            <td>@c.CreatedDate.ToString("yyyy-MM-dd")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+else if (Model.ActiveTab == "leads")
+{
+    <!-- Lead Report -->
+    <div class="crm-card">
+        <div class="table-responsive">
+            <table class="table crm-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Lead Name</th>
+                        <th>Company</th>
+                        <th>Source</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>Value</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in Model.Leads)
+                    {
+                        <tr>
+                            <td><span class="badge bg-light text-primary border font-monospace">@l.LeadCode</span></td>
+                            <td class="fw-semibold">@l.LeadName</td>
+                            <td>@(l.CompanyName ?? "-")</td>
+                            <td><span class="badge bg-light text-muted border">@l.Source</span></td>
+                            <td><span class="badge-status @(l.Status == "Converted" ? "badge-converted" : l.Status == "Lost" ? "badge-lost" : "badge-new")">@l.Status</span></td>
+                            <td>@l.Priority</td>
+                            <td>$@l.ExpectedValue.ToString("N0")</td>
+                            <td>@l.CreatedDate.ToString("yyyy-MM-dd")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

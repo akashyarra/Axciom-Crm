@@ -1,0 +1,18 @@
+## Build & Binary outputs
+bin/
+obj/
+
+## IDE and Editor files
+.vs/
+.vscode/
+*.user
+*.suo
+
+## Database and SQLite files
+*.db
+*.db-shm
+*.db-wal
+
+## Temporary and sensitive files
+cookies.txt
+DataProtectionKeys/

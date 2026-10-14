@@ -1,0 +1,195 @@
+@model IEnumerable<AcxiomCRM.Models.FollowUp>
+@{
+    ViewData["Title"] = "Follow-Up Management";
+    string currentView = ViewBag.ViewType as string ?? "all";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="fw-bold text-dark mb-1">Follow-Up Tasks & Reminders</h4>
+        <p class="text-muted small mb-0">Schedule calls, meetings, emails, and track upcoming or overdue touchpoints.</p>
+    </div>
+    <a asp-action="Create" class="btn btn-crm-primary">
+        <i class="bi bi-calendar-plus me-1"></i> Schedule Follow-Up
+    </a>
+</div>
+
+<!-- View Filters & Quick Tabs -->
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <ul class="nav nav-pills bg-white p-1 rounded-3 shadow-sm border">
+        <li class="nav-item">
+            <a class="nav-link @(currentView == "all" ? "active" : "")" asp-action="Index" asp-route-viewType="all">All Follow-Ups</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(currentView == "upcoming" ? "active" : "")" asp-action="Index" asp-route-viewType="upcoming">Upcoming</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link @(currentView == "overdue" ? "active bg-danger" : "text-danger")" asp-action="Index" asp-route-viewType="overdue">
+                <i class="bi bi-exclamation-circle-fill me-1"></i> Overdue
+            </a>
+        </li>
+    </ul>
+
+    <form method="get" asp-action="Index" class="d-flex gap-2">
+        <input type="hidden" name="viewType" value="@currentView" />
+        <select name="type" class="form-select form-select-sm">
+            <option value="">All Types</option>
+            <option value="Call" selected="@(ViewBag.Type == "Call")">Call</option>
+            <option value="Meeting" selected="@(ViewBag.Type == "Meeting")">Meeting</option>
+            <option value="Email" selected="@(ViewBag.Type == "Email")">Email</option>
+            <option value="Task" selected="@(ViewBag.Type == "Task")">Task</option>
+        </select>
+        <select name="status" class="form-select form-select-sm">
+            <option value="">All Statuses</option>
+            <option value="Planned" selected="@(ViewBag.Status == "Planned")">Planned</option>
+            <option value="Completed" selected="@(ViewBag.Status == "Completed")">Completed</option>
+            <option value="Missed" selected="@(ViewBag.Status == "Missed")">Missed</option>
+            <option value="Cancelled" selected="@(ViewBag.Status == "Cancelled")">Cancelled</option>
+        </select>
+        <button type="submit" class="btn btn-sm btn-outline-primary">Filter</button>
+        <a asp-action="Index" class="btn btn-sm btn-light border text-muted">Reset</a>
+    </form>
+</div>
+
+<!-- Follow-Ups Table -->
+<div class="crm-card">
+    <div class="table-responsive">
+        <table class="table crm-table table-hover">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Subject</th>
+                    <th>Related To</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Assigned To</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr class="@(item.IsOverdue ? "table-danger bg-opacity-25" : "")">
+                            <td>
+                                <span class="badge @(item.FollowUpType == "Call" ? "bg-info-subtle text-info" : item.FollowUpType == "Meeting" ? "bg-primary-subtle text-primary" : item.FollowUpType == "Email" ? "bg-success-subtle text-success" : "bg-secondary-subtle text-dark")">
+                                    <i class="bi @(item.FollowUpType == "Call" ? "bi-telephone" : item.FollowUpType == "Meeting" ? "bi-people" : item.FollowUpType == "Email" ? "bi-envelope" : "bi-check-square") me-1"></i>
+                                    @item.FollowUpType
+                                </span>
+                            </td>
+                            <td class="fw-semibold text-dark">
+                                @item.Subject
+                                @if (item.IsOverdue)
+                                {
+                                    <span class="badge bg-danger ms-1">Overdue</span>
+                                }
+                            </td>
+                            <td>
+                                @if (item.Customer != null)
+                                {
+                                    <a asp-controller="Customers" asp-action="Details" asp-route-id="@item.CustomerId" class="text-decoration-none">
+                                        <i class="bi bi-building me-1"></i>@item.Customer.CustomerName
+                                    </a>
+                                }
+                                else if (item.Lead != null)
+                                {
+                                    <a asp-controller="Leads" asp-action="Details" asp-route-id="@item.LeadId" class="text-decoration-none text-muted">
+                                        <i class="bi bi-funnel me-1"></i>@item.Lead.LeadName
+                                    </a>
+                                }
+                                else if (item.Opportunity != null)
+                                {
+                                    <a asp-controller="Opportunities" asp-action="Details" asp-route-id="@item.OpportunityId" class="text-decoration-none text-success">
+                                        <i class="bi bi-graph-up me-1"></i>@item.Opportunity.OpportunityName
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="@(item.IsOverdue ? "text-danger fw-bold" : "text-dark")">
+                                    @item.FollowUpDate.ToString("MMM dd, yyyy")
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge-status @(item.Status == "Completed" ? "badge-active" : item.Status == "Missed" ? "badge-lost" : "badge-planned")">
+                                    @item.Status
+                                </span>
+                            </td>
+                            <td>@(item.AssignedUser?.FullName ?? "Unassigned")</td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    @if (item.Status == "Planned")
+                                    {
+                                        <form asp-action="Complete" asp-route-id="@item.FollowUpId" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-outline-success" title="Mark Completed">
+                                                <i class="bi bi-check2"></i> Complete
+                                            </button>
+                                        </form>
+                                    }
+                                    <a asp-action="Edit" asp-route-id="@item.FollowUpId" class="btn btn-outline-primary" title="Edit / Reschedule">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#delFollowUp-@item.FollowUpId" title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Delete Modal -->
+                                <div class="modal fade" id="delFollowUp-@item.FollowUpId" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content text-start">
+                                            <div class="modal-header border-0">
+                                                <h5 class="modal-title fw-bold">Delete Follow-Up</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body py-2">
+                                                Delete follow-up <strong>@item.Subject</strong>?
+                                            </div>
+                                            <div class="modal-footer border-0">
+                                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                                                <form asp-action="Delete" asp-route-id="@item.FollowUpId" method="post">
+                                                    @Html.AntiForgeryToken()
+                                                    <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-calendar-check fs-1 text-secondary"></i>
+                            <div class="mt-2">No follow-ups found for the selected view.</div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (ViewBag.TotalPages > 1)
+    {
+        <div class="d-flex justify-content-between align-items-center p-3 border-top">
+            <span class="text-muted small">Showing @Model.Count() of @ViewBag.TotalCount follow-ups</span>
+            <ul class="pagination pagination-sm mb-0">
+                @for (int p = 1; p <= ViewBag.TotalPages; p++)
+                {
+                    <li class="page-item @(p == ViewBag.CurrentPage ? "active" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@p" asp-route-viewType="@currentView" asp-route-type="@ViewBag.Type" asp-route-status="@ViewBag.Status">@p</a>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+</div>

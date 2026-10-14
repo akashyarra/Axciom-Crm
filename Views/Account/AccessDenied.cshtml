@@ -1,0 +1,18 @@
+@{
+    ViewData["Title"] = "Access Denied";
+}
+
+<div class="text-center py-5">
+    <div class="text-warning mb-3" style="font-size: 3.5rem;">
+        <i class="bi bi-shield-slash-fill"></i>
+    </div>
+    <h2 class="fw-bold text-dark">Access Denied (403)</h2>
+    <p class="text-muted mt-2 max-w-md mx-auto" style="max-width: 500px;">
+        You do not have authorization to access this module or record. AcxiomCRM enforces server-side role and resource-level access control.
+    </p>
+    <div class="mt-4">
+        <a asp-controller="Dashboard" asp-action="Index" class="btn btn-crm-primary">
+            <i class="bi bi-house-door-fill me-1"></i> Return to Dashboard
+        </a>
+    </div>
+</div>

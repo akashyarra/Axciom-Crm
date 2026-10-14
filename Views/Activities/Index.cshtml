@@ -1,0 +1,129 @@
+@model IEnumerable<AcxiomCRM.Models.Activity>
+@{
+    ViewData["Title"] = "Activity Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="fw-bold text-dark mb-1">Sales Activities & Logs</h4>
+        <p class="text-muted small mb-0">Track completed touchpoints: phone calls, meetings, emails, and client tasks.</p>
+    </div>
+    <a asp-action="Create" class="btn btn-crm-primary">
+        <i class="bi bi-clock-history me-1"></i> Log Activity
+    </a>
+</div>
+
+<!-- Filters -->
+<div class="crm-card p-3 mb-4">
+    <form method="get" asp-action="Index" class="row g-2 align-items-center">
+        <div class="col-12 col-md-4">
+            <select name="type" class="form-select">
+                <option value="">All Activity Types</option>
+                <option value="Call" selected="@(ViewBag.Type == "Call")">Call</option>
+                <option value="Meeting" selected="@(ViewBag.Type == "Meeting")">Meeting</option>
+                <option value="Email" selected="@(ViewBag.Type == "Email")">Email</option>
+                <option value="Task" selected="@(ViewBag.Type == "Task")">Task</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-4">
+            <select name="status" class="form-select">
+                <option value="">All Statuses</option>
+                <option value="Completed" selected="@(ViewBag.Status == "Completed")">Completed</option>
+                <option value="Planned" selected="@(ViewBag.Status == "Planned")">Planned</option>
+                <option value="Cancelled" selected="@(ViewBag.Status == "Cancelled")">Cancelled</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary"><i class="bi bi-funnel me-1"></i> Filter</button>
+            <a asp-action="Index" class="btn btn-light border text-muted">Clear</a>
+        </div>
+    </form>
+</div>
+
+<!-- Activities List -->
+<div class="crm-card">
+    <div class="table-responsive">
+        <table class="table crm-table table-hover">
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Subject</th>
+                    <th>Description</th>
+                    <th>Related To</th>
+                    <th>Date & Time</th>
+                    <th>Owner</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model.Any())
+                {
+                    foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <span class="badge @(item.ActivityType == "Call" ? "bg-info-subtle text-info" : item.ActivityType == "Meeting" ? "bg-primary-subtle text-primary" : item.ActivityType == "Email" ? "bg-success-subtle text-success" : "bg-secondary-subtle text-dark")">
+                                    <i class="bi @(item.ActivityType == "Call" ? "bi-telephone" : item.ActivityType == "Meeting" ? "bi-people" : item.ActivityType == "Email" ? "bi-envelope" : "bi-check-square") me-1"></i>
+                                    @item.ActivityType
+                                </span>
+                            </td>
+                            <td class="fw-semibold text-dark">@item.Subject</td>
+                            <td class="text-muted small" style="max-width: 250px;">@(item.Description ?? "-")</td>
+                            <td>
+                                @if (item.Customer != null)
+                                {
+                                    <a asp-controller="Customers" asp-action="Details" asp-route-id="@item.CustomerId" class="text-decoration-none">
+                                        <i class="bi bi-building me-1"></i>@item.Customer.CustomerName
+                                    </a>
+                                }
+                                else if (item.Lead != null)
+                                {
+                                    <a asp-controller="Leads" asp-action="Details" asp-route-id="@item.LeadId" class="text-decoration-none text-muted">
+                                        <i class="bi bi-funnel me-1"></i>@item.Lead.LeadName
+                                    </a>
+                                }
+                                else if (item.Opportunity != null)
+                                {
+                                    <a asp-controller="Opportunities" asp-action="Details" asp-route-id="@item.OpportunityId" class="text-decoration-none text-success">
+                                        <i class="bi bi-graph-up me-1"></i>@item.Opportunity.OpportunityName
+                                    </a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                            <td class="text-muted small">@item.ActivityDate.ToString("MMM dd, yyyy HH:mm")</td>
+                            <td>@(item.AssignedUser?.FullName ?? "Unassigned")</td>
+                            <td><span class="badge-status @(item.Status == "Completed" ? "badge-active" : "badge-planned")">@item.Status</span></td>
+                        </tr>
+                    }
+                }
+                else
+                {
+                    <tr>
+                        <td colspan="7" class="text-center py-5 text-muted">
+                            <i class="bi bi-clock-history fs-1 text-secondary"></i>
+                            <div class="mt-2">No activity records found.</div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (ViewBag.TotalPages > 1)
+    {
+        <div class="d-flex justify-content-between align-items-center p-3 border-top">
+            <span class="text-muted small">Showing @Model.Count() of @ViewBag.TotalCount activities</span>
+            <ul class="pagination pagination-sm mb-0">
+                @for (int p = 1; p <= ViewBag.TotalPages; p++)
+                {
+                    <li class="page-item @(p == ViewBag.CurrentPage ? "active" : "")">
+                        <a class="page-link" asp-action="Index" asp-route-page="@p" asp-route-type="@ViewBag.Type" asp-route-status="@ViewBag.Status">@p</a>
+                    </li>
+                }
+            </ul>
+        </div>
+    }
+</div>
