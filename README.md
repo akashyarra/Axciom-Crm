@@ -38,11 +38,39 @@ Users / Browser / Mobile API Client
 (CrmService, AuditService, Business Rule Validators, Lead Conversion Workflow)
                   ↓
           Data Access Layer
-(ApplicationDbContext, EF Core Repositories, Indexes, Cascades)
+(ApplicationDbContext, EF Core 8 Repositories, Indexes, Cascades)
                   ↓
           Database Layer
-(SQLite: acxiomcrm.db with ASP.NET Core Identity)
+(Microsoft SQL Server 2022 / Express / LocalDB / SQLite supported)
 ```
+
+---
+
+## 💾 Database Architecture & Data Storage
+
+### How Data Is Stored
+The application uses **Microsoft SQL Server** (`localhost\SQLEXPRESS`, LocalDB, or Azure SQL) as its enterprise database engine.
+* **Auto-Provisioning & Seeding**: When anyone clones this repository and executes `dotnet run`, Entity Framework Core automatically creates the **`AcxiomCRM`** database, provisions all 13 tables, foreign keys, and indexes, and automatically populates the seed data via [DbInitializer.cs](file:///c:/Users/_MSI_/OneDrive/Desktop/acxiom%20crm/Data/DbInitializer.cs).
+* **Pre-Seeded Data Includes**:
+  * **System Users & Roles**: Admin (`admin@acxiomcrm.com`), Manager (`manager@acxiomcrm.com`), Sales Executives (`sales1@acxiomcrm.com`, `sales2@acxiomcrm.com`).
+  * **Sample Customers**: Complete customer profiles (Apex Global, Starlight Retailers, Nexus Finance).
+  * **Inbound Leads**: Leads across various stages (`Qualified`, `Contacted`, `New`).
+  * **Opportunity Pipeline**: Opportunities totaling over $330,000 across multiple pipeline stages.
+  * **Follow-ups & Activities**: Scheduled meetings, calls, and completed interactions.
+  * **Audit Trail**: Security & data audit logs recording all system actions.
+
+### Standalone SQL Script
+For database administrators or evaluators who want to inspect or run the SQL schema directly in **SQL Server Management Studio (SSMS)**:
+* Open and execute [`AcxiomCRM_Database_Setup.sql`](file:///c:/Users/_MSI_/OneDrive/Desktop/acxiom%20crm/AcxiomCRM_Database_Setup.sql).
+
+### Connection String Configuration
+Configured in [`appsettings.json`](file:///c:/Users/_MSI_/OneDrive/Desktop/acxiom%20crm/appsettings.json):
+```json
+"ConnectionStrings": {
+  "DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=AcxiomCRM;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
+}
+```
+*(If you are running on LocalDB instead of SQLEXPRESS, change `Server=localhost\\SQLEXPRESS` to `Server=(localdb)\\mssqllocaldb`).*
 
 ---
 
